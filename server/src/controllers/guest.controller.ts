@@ -80,7 +80,7 @@ export const guestLogoutController = async (id: number) => {
       refreshTokenExpiresAt: null
     }
   })
-  return 'Đăng xuất thành công'
+  return 'Đăng xuất thành công!'
 }
 
 export const guestRefreshTokenController = async (refreshToken: string) => {

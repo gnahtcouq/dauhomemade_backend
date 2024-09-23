@@ -21,7 +21,7 @@ export const logoutController = async (refreshToken: string) => {
       token: refreshToken
     }
   })
-  return 'Đăng xuất thành công'
+  return 'Đăng xuất thành công!'
 }
 
 export const loginController = async (body: LoginBodyType) => {

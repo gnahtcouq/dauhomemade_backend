@@ -81,7 +81,7 @@ export default async function orderRoutes(fastify: FastifyInstance, options: Fas
         toDate: request.query.toDate
       })
       reply.send({
-        message: 'Lấy danh sách đơn hàng thành công',
+        message: 'Lấy danh sách đơn hàng thành công!',
         data: result as GetOrdersResType['data']
       })
     }
@@ -103,7 +103,7 @@ export default async function orderRoutes(fastify: FastifyInstance, options: Fas
     async (request, reply) => {
       const result = await getOrderDetailController(request.params.orderId)
       reply.send({
-        message: 'Lấy đơn hàng thành công',
+        message: 'Lấy đơn hàng thành công!',
         data: result as GetOrderDetailResType['data']
       })
     }
@@ -128,10 +128,23 @@ export default async function orderRoutes(fastify: FastifyInstance, options: Fas
 
       const currentOrder = await getOrderDetailController(request.params.orderId)
 
+      // Kiểm tra trạng thái thanh toán
+      if (
+        currentOrder.status === 'Paid' ||
+        currentOrder.status === 'Delivered' ||
+        currentOrder.status === 'Rejected' ||
+        currentOrder.status === 'Processing'
+      ) {
+        return reply.status(403).send({
+          message: 'Đơn hàng đã được xử lí, không thể chỉnh sửa',
+          data: {} as any
+        })
+      }
+
       // Kiểm tra vai trò
       if (userRole === Role.Employee && request.body.status !== currentOrder.status)
         return reply.status(403).send({
-          message: 'Nhân viên không được phép thay đổi trạng thái đơn hàng',
+          message: 'Bạn không có quyền thay đổi trạng thái đơn hàng',
           data: {} as any
         })
 
@@ -145,7 +158,7 @@ export default async function orderRoutes(fastify: FastifyInstance, options: Fas
         fastify.io.to(ManagerRoom).emit('update-order', result.order)
       }
       reply.send({
-        message: 'Cập nhật đơn hàng thành công',
+        message: 'Cập nhật đơn hàng thành công!',
         data: result.order as UpdateOrderResType['data']
       })
     }
