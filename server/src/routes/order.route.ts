@@ -129,14 +129,9 @@ export default async function orderRoutes(fastify: FastifyInstance, options: Fas
       const currentOrder = await getOrderDetailController(request.params.orderId)
 
       // Kiểm tra trạng thái thanh toán
-      if (
-        currentOrder.status === 'Paid' ||
-        currentOrder.status === 'Delivered' ||
-        currentOrder.status === 'Rejected' ||
-        currentOrder.status === 'Processing'
-      ) {
+      if (currentOrder.status === 'Paid') {
         return reply.status(403).send({
-          message: 'Đơn hàng đã được xử lí, không thể chỉnh sửa',
+          message: 'Đơn hàng đã thanh toán, không thể thay đổi trạng thái',
           data: {} as any
         })
       }
