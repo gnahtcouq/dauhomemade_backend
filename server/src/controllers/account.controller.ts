@@ -37,6 +37,19 @@ export const initOwnerAccount = async () => {
 
 export const createEmployeeAccount = async (body: CreateEmployeeAccountBodyType) => {
   try {
+    // Kiểm tra xem email đã tồn tại hay chưa
+    const existingEmail = await prisma.account.findUnique({
+      where: { email: body.email }
+    })
+
+    if (existingEmail) {
+      throw new EntityError([
+        {
+          message: 'Email này đã tồn tại',
+          field: 'email'
+        }
+      ])
+    }
     const hashedPassword = await hashPassword(body.password)
     const account = await prisma.account.create({
       data: {
@@ -51,7 +64,7 @@ export const createEmployeeAccount = async (body: CreateEmployeeAccountBodyType)
   } catch (error: any) {
     if (error instanceof PrismaClientKnownRequestError) {
       if (error.code === PrismaErrorCode.UniqueConstraintViolation) {
-        throw new EntityError([{ field: 'email', message: 'Email đã tồn tại' }])
+        throw new EntityError([{ field: 'email', message: 'Email này đã tồn tại' }])
       }
     }
     throw error
@@ -90,6 +103,19 @@ export const getAccountList = async () => {
 
 export const updateEmployeeAccount = async (accountId: number, body: UpdateEmployeeAccountBodyType) => {
   try {
+    // Kiểm tra xem email đã tồn tại hay chưa
+    const existingEmail = await prisma.account.findUnique({
+      where: { email: body.email }
+    })
+
+    if (existingEmail) {
+      throw new EntityError([
+        {
+          message: 'Email này đã tồn tại',
+          field: 'email'
+        }
+      ])
+    }
     const socketRecord = await prisma.socket.findUnique({
       where: {
         accountId

@@ -23,6 +23,20 @@ export const getTableDetail = (number: number) => {
 export const createTable = async (data: CreateTableBodyType) => {
   const token = randomId()
   try {
+    // Kiểm tra xem số bàn đã tồn tại hay chưa
+    const existingTable = await prisma.table.findUnique({
+      where: { number: data.number }
+    })
+
+    if (existingTable) {
+      throw new EntityError([
+        {
+          message: 'Số bàn này đã tồn tại',
+          field: 'number'
+        }
+      ])
+    }
+
     const result = await prisma.table.create({
       data: {
         ...data,
@@ -31,13 +45,15 @@ export const createTable = async (data: CreateTableBodyType) => {
     })
     return result
   } catch (error) {
-    if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
-      throw new EntityError([
-        {
-          message: 'Số bàn này đã tồn tại',
-          field: 'number'
-        }
-      ])
+    if (error instanceof PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        throw new EntityError([
+          {
+            message: 'Số bàn này đã tồn tại',
+            field: 'number'
+          }
+        ])
+      }
     }
     throw error
   }
