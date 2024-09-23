@@ -166,6 +166,15 @@ export const updateEmployeeAccount = async (accountId: number, body: UpdateEmplo
 }
 
 export const deleteEmployeeAccount = async (accountId: number) => {
+  // Kiểm tra xem tài khoản có phải là admin không
+  const adminAccount = await prisma.account.findUnique({
+    where: { id: accountId }
+  })
+
+  if (adminAccount?.email === envConfig.INITIAL_EMAIL_OWNER) {
+    throw new Error('Không thể xóa tài khoản chủ cửa hàng')
+  }
+
   const socketRecord = await prisma.socket.findUnique({
     where: {
       accountId
