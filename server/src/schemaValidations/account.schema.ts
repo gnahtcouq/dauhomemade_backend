@@ -29,7 +29,7 @@ export type AccountResType = z.TypeOf<typeof AccountRes>
 
 export const CreateEmployeeAccountBody = z
   .object({
-    name: z.string().trim().min(2).max(256),
+    name: z.string().trim().min(2).max(50),
     email: z.string().email(),
     avatar: z.string().url().optional(),
     password: z.string().min(6).max(100),
@@ -50,7 +50,7 @@ export type CreateEmployeeAccountBodyType = z.TypeOf<typeof CreateEmployeeAccoun
 
 export const UpdateEmployeeAccountBody = z
   .object({
-    name: z.string().trim().min(2).max(256),
+    name: z.string().trim().min(2).max(50),
     email: z.string().email(),
     avatar: z.string().url().optional(),
     changePassword: z.boolean().optional(),
@@ -81,7 +81,7 @@ export type UpdateEmployeeAccountBodyType = z.TypeOf<typeof UpdateEmployeeAccoun
 
 export const UpdateMeBody = z
   .object({
-    name: z.string().trim().min(2).max(256),
+    name: z.string().trim().min(2).max(50),
     avatar: z.string().url().optional()
   })
   .strict()
