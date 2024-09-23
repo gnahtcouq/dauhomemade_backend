@@ -30,7 +30,17 @@ import {
   UpdateOrderResType
 } from '@/schemaValidations/order.schema'
 import { FastifyInstance, FastifyPluginOptions } from 'fastify'
+import moment from 'moment'
+import { v4 as uuid } from 'uuid'
+import CryptoJS from 'crypto-js'
+import axios from 'axios'
 
+const config = {
+  appid: '554',
+  key1: '8NdU5pG5R2spGHGhyO99HN1OhD8IQJBn',
+  key2: 'uUfsWgfLkRLzq6W2uNXTCxrfxs51auny',
+  endpoint: 'https://sandbox.zalopay.com.vn/v001/tpe/createorder'
+}
 export default async function orderRoutes(fastify: FastifyInstance, options: FastifyPluginOptions) {
   fastify.addHook('preValidation', fastify.auth([requireLoginedHook]))
   fastify.post<{ Reply: CreateOrdersResType; Body: CreateOrdersBodyType }>(
@@ -57,7 +67,7 @@ export default async function orderRoutes(fastify: FastifyInstance, options: Fas
         fastify.io.to(ManagerRoom).emit('new-order', orders)
       }
       reply.send({
-        message: `Tạo thành công ${orders.length} đơn hàng cho khách hàng`,
+        message: `Tạo thành công ${orders.length} đơn hàng cho khách hàng!`,
         data: orders as CreateOrdersResType['data']
       })
     }
@@ -124,14 +134,14 @@ export default async function orderRoutes(fastify: FastifyInstance, options: Fas
       })
     },
     async (request, reply) => {
-      const userRole = request.decodedAccessToken?.role // Giả sử bạn lưu vai trò trong token
+      const userRole = request.decodedAccessToken?.role
 
       const currentOrder = await getOrderDetailController(request.params.orderId)
 
       // Kiểm tra trạng thái thanh toán
       if (currentOrder.status === 'Paid') {
         return reply.status(403).send({
-          message: 'Đơn hàng đã thanh toán, không thể thay đổi trạng thái',
+          message: 'Đơn hàng đã thanh toán, không thể chỉnh sửa hoặc thay đổi trạng thái',
           data: {} as any
         })
       }
@@ -171,7 +181,7 @@ export default async function orderRoutes(fastify: FastifyInstance, options: Fas
       preValidation: fastify.auth([requireOwnerHook])
     },
     async (request, reply) => {
-      const userRole = request.decodedAccessToken?.role // Giả sử bạn lưu vai trò trong token
+      const userRole = request.decodedAccessToken?.role
       // Kiểm tra vai trò
       if (userRole === Role.Employee)
         return reply.status(403).send({
@@ -194,4 +204,93 @@ export default async function orderRoutes(fastify: FastifyInstance, options: Fas
       })
     }
   )
+
+  fastify.post('/zalopay', async (request, reply) => {
+    const embeddata = {
+      redirecturl: 'https://github.com/gnahtcouq'
+    }
+    const items = [{}]
+
+    const order: {
+      appid: string
+      apptransid: string
+      appuser: string
+      apptime: number
+      item: string
+      embeddata: string
+      amount: number
+      description: string
+      bankcode: string
+      mac?: string
+      callback_url: string
+    } = {
+      appid: config.appid,
+      apptransid: `${moment().format('YYMMDD')}_${uuid()}`, // mã giao dich có định dạng yyMMdd_xxxx
+      appuser: 'demo',
+      apptime: Date.now(), // miliseconds
+      item: JSON.stringify(items),
+      embeddata: JSON.stringify(embeddata),
+      amount: 50000,
+      description: 'Thanh toán đơn hàng tại Đậu Homemade',
+      bankcode: '',
+      callback_url: 'https://dau.stu.id.vn:81/api/callback'
+    }
+
+    const data =
+      config.appid +
+      '|' +
+      order.apptransid +
+      '|' +
+      order.appuser +
+      '|' +
+      order.amount +
+      '|' +
+      order.apptime +
+      '|' +
+      order.embeddata +
+      '|' +
+      order.item
+
+    order.mac = CryptoJS.HmacSHA256(data, config.key1).toString()
+    try {
+      const result = await axios.post(config.endpoint, null, { params: order })
+      return reply.status(200).send(result.data)
+    } catch (error) {
+      if (error instanceof Error) {
+        console.log(error.message)
+      } else {
+        console.log(String(error))
+      }
+    }
+  })
+
+  fastify.post('/callback', async (request, reply) => {
+    let result: { returncode?: number; returnmessage?: string } = {}
+
+    try {
+      let dataStr = (request.body as { data: string }).data
+      let reqMac = (request.body as { mac: string }).mac
+
+      let mac = CryptoJS.HmacSHA256(dataStr, config.key2).toString()
+      console.log('mac =', mac)
+
+      // kiểm tra callback hợp lệ (đến từ ZaloPay server)
+      if (reqMac !== mac) {
+        // callback không hợp lệ
+        result.returncode = -1
+        result.returnmessage = 'mac not equal'
+      } else {
+        // thanh toán thành công
+        // merchant cập nhật trạng thái cho đơn hàng
+        result.returncode = 1
+        result.returnmessage = 'success'
+      }
+    } catch (ex) {
+      result.returncode = 0 // ZaloPay server sẽ callback lại (tối đa 3 lần)
+      result.returnmessage = (ex as Error).message
+    }
+
+    // thông báo kết quả cho ZaloPay server
+    reply.send(result)
+  })
 }
