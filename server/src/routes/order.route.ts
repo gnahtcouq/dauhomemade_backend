@@ -171,6 +171,14 @@ export default async function orderRoutes(fastify: FastifyInstance, options: Fas
       preValidation: fastify.auth([requireOwnerHook])
     },
     async (request, reply) => {
+      const userRole = request.decodedAccessToken?.role // Giả sử bạn lưu vai trò trong token
+      // Kiểm tra vai trò
+      if (userRole === Role.Employee)
+        return reply.status(403).send({
+          message: 'Bạn không có quyền thanh toán đơn hàng',
+          data: {} as any
+        })
+
       const result = await payOrdersController({
         guestId: request.body.guestId,
         orderHandlerId: request.decodedAccessToken?.userId as number
@@ -181,7 +189,7 @@ export default async function orderRoutes(fastify: FastifyInstance, options: Fas
         fastify.io.to(ManagerRoom).emit('payment', result.orders)
       }
       reply.send({
-        message: `Thanh toán thành công ${result.orders.length} đơn`,
+        message: `Thanh toán thành công ${result.orders.length} đơn!`,
         data: result.orders as PayGuestOrdersResType['data']
       })
     }
