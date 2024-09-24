@@ -29,7 +29,7 @@ export const initOwnerAccount = async () => {
     const chalk = await getChalk()
     console.log(
       chalk.bgCyan(
-        `Khởi tạo tài khoản chủ quán thành công: ${envConfig.INITIAL_EMAIL_OWNER}|${envConfig.INITIAL_PASSWORD_OWNER}`
+        `Khởi tạo tài khoản chủ cửa hàng thành công: ${envConfig.INITIAL_EMAIL_OWNER}|${envConfig.INITIAL_PASSWORD_OWNER}`
       )
     )
   }
@@ -108,7 +108,8 @@ export const updateEmployeeAccount = async (accountId: number, body: UpdateEmplo
       where: { email: body.email }
     })
 
-    if (existingEmail) {
+    // Kiểm tra nếu email đã tồn tại và không phải của tài khoản hiện tại
+    if (existingEmail && existingEmail.id !== accountId) {
       throw new EntityError([
         {
           message: 'Email này đã tồn tại',
