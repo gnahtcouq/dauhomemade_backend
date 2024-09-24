@@ -211,9 +211,6 @@ export default async function orderRoutes(fastify: FastifyInstance, options: Fas
 
   fastify.post<{ Body: PayGuestOrdersBodyType; Reply: ZaloPayGuestOrdersResType }>(
     '/zalopay',
-    {
-      preValidation: fastify.auth([requireLoginedHook])
-    },
     async (request, reply) => {
       const result = await payOrdersWithZaloPayController({
         guestId: request.body.guestId
