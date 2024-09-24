@@ -14,6 +14,7 @@ const DishSnapshotSchema = z.object({
   createdAt: z.date(),
   updatedAt: z.date()
 })
+
 export const OrderSchema = z.object({
   id: z.number(),
   guestId: z.number().nullable(),
@@ -34,7 +35,8 @@ export const OrderSchema = z.object({
   orderHandler: AccountSchema.nullable(),
   status: z.enum(OrderStatusValues),
   createdAt: z.date(),
-  updatedAt: z.date()
+  updatedAt: z.date(),
+  app_trans_id: z.string().nullable()
 })
 
 export const UpdateOrderBody = z.object({
@@ -90,6 +92,16 @@ export type PayGuestOrdersBodyType = z.TypeOf<typeof PayGuestOrdersBody>
 export const PayGuestOrdersRes = GetOrdersRes
 
 export type PayGuestOrdersResType = z.TypeOf<typeof PayGuestOrdersRes>
+
+export const ZaloPayGuestOrdersRes = z.object({
+  message: z.string(),
+  data: z.object({
+    orders: z.array(z.object({})),
+    paymentUrl: z.string()
+  })
+})
+
+export type ZaloPayGuestOrdersResType = z.TypeOf<typeof ZaloPayGuestOrdersRes>
 
 export const CreateOrdersBody = z
   .object({

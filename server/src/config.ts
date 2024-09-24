@@ -31,7 +31,14 @@ const configSchema = z.object({
   PROTOCOL: z.string(),
   UPLOAD_FOLDER: z.string(),
   CLIENT_URL: z.string(),
-  BACKEND_URL: z.string()
+  BACKEND_URL: z.string(),
+  ZP_APP_ID: z.string(),
+  ZP_KEY1: z.string(),
+  ZP_KEY2: z.string(),
+  ZP_CREATE_ORDER: z.string(),
+  ZP_CHECK_STATUS: z.string(),
+  ZP_REDIRECT_URL: z.string(),
+  ZP_CALLBACK_URL: z.string()
 })
 
 const configServer = configSchema.safeParse(process.env)

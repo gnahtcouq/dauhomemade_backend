@@ -1,12 +1,14 @@
 import { ManagerRoom, Role } from '@/constants/type'
 import {
+  callbackZaloPayController,
   createOrdersController,
   getOrderDetailController,
   getOrdersController,
   payOrdersController,
+  payOrdersWithZaloPayController,
   updateOrderController
 } from '@/controllers/order.controller'
-import { requireEmployeeHook, requireLoginedHook, requireOwnerHook } from '@/hooks/auth.hooks'
+import { requireEmployeeHook, requireGuestHook, requireLoginedHook, requireOwnerHook } from '@/hooks/auth.hooks'
 import {
   CreateOrdersBody,
   CreateOrdersBodyType,
@@ -27,22 +29,24 @@ import {
   UpdateOrderBody,
   UpdateOrderBodyType,
   UpdateOrderRes,
-  UpdateOrderResType
+  UpdateOrderResType,
+  ZaloPayGuestOrdersResType
 } from '@/schemaValidations/order.schema'
 import { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import moment from 'moment'
-import { v4 as uuid } from 'uuid'
 import CryptoJS from 'crypto-js'
 import axios from 'axios'
+import QueryString from 'qs'
 
 const config = {
-  appid: '554',
-  key1: '8NdU5pG5R2spGHGhyO99HN1OhD8IQJBn',
-  key2: 'uUfsWgfLkRLzq6W2uNXTCxrfxs51auny',
-  endpoint: 'https://sandbox.zalopay.com.vn/v001/tpe/createorder'
+  app_id: '2554',
+  key1: 'sdngKKJmqEMzvh5QQcdD2A9XBSKUNaYn',
+  key2: 'trMrHtvjo6myautxDUiAcYsVtaeQ8nhf',
+  endpoint: 'https://sb-openapi.zalopay.vn/v2/create',
+  endpoint_check_status: 'https://sandbox.zalopay.com.vn/v001/tpe/getstatusbyapptransid'
 }
+
 export default async function orderRoutes(fastify: FastifyInstance, options: FastifyPluginOptions) {
-  fastify.addHook('preValidation', fastify.auth([requireLoginedHook]))
   fastify.post<{ Reply: CreateOrdersResType; Body: CreateOrdersBodyType }>(
     '/',
     {
@@ -52,8 +56,8 @@ export default async function orderRoutes(fastify: FastifyInstance, options: Fas
         },
         body: CreateOrdersBody
       },
-      preValidation: fastify.auth([requireOwnerHook, requireEmployeeHook], {
-        relation: 'or'
+      preValidation: fastify.auth([requireLoginedHook, [requireOwnerHook, requireEmployeeHook]], {
+        relation: 'and'
       })
     },
     async (request, reply) => {
@@ -81,8 +85,8 @@ export default async function orderRoutes(fastify: FastifyInstance, options: Fas
         },
         querystring: GetOrdersQueryParams
       },
-      preValidation: fastify.auth([requireOwnerHook, requireEmployeeHook], {
-        relation: 'or'
+      preValidation: fastify.auth([requireLoginedHook, [requireOwnerHook, requireEmployeeHook]], {
+        relation: 'and'
       })
     },
     async (request, reply) => {
@@ -106,8 +110,8 @@ export default async function orderRoutes(fastify: FastifyInstance, options: Fas
         },
         params: OrderParam
       },
-      preValidation: fastify.auth([requireOwnerHook, requireEmployeeHook], {
-        relation: 'or'
+      preValidation: fastify.auth([requireLoginedHook, [requireOwnerHook, requireEmployeeHook]], {
+        relation: 'and'
       })
     },
     async (request, reply) => {
@@ -129,8 +133,8 @@ export default async function orderRoutes(fastify: FastifyInstance, options: Fas
         body: UpdateOrderBody,
         params: OrderParam
       },
-      preValidation: fastify.auth([requireOwnerHook, requireEmployeeHook], {
-        relation: 'or'
+      preValidation: fastify.auth([requireLoginedHook, [requireOwnerHook, requireEmployeeHook]], {
+        relation: 'and'
       })
     },
     async (request, reply) => {
@@ -178,7 +182,7 @@ export default async function orderRoutes(fastify: FastifyInstance, options: Fas
         },
         body: PayGuestOrdersBody
       },
-      preValidation: fastify.auth([requireOwnerHook])
+      preValidation: fastify.auth([requireLoginedHook, [requireOwnerHook]])
     },
     async (request, reply) => {
       const userRole = request.decodedAccessToken?.role
@@ -205,92 +209,78 @@ export default async function orderRoutes(fastify: FastifyInstance, options: Fas
     }
   )
 
-  fastify.post('/zalopay', async (request, reply) => {
-    const embeddata = {
-      redirecturl: 'https://github.com/gnahtcouq'
+  fastify.post<{ Body: PayGuestOrdersBodyType; Reply: ZaloPayGuestOrdersResType }>(
+    '/zalopay',
+    {
+      preValidation: fastify.auth([requireLoginedHook])
+    },
+    async (request, reply) => {
+      const result = await payOrdersWithZaloPayController({
+        guestId: request.body.guestId
+      })
+      reply.send({
+        message: `Gửi yêu cầu thanh toán ZaloPay với ${result.orders.length} đơn!`,
+        data: {
+          paymentUrl: result.paymentUrl,
+          orders: result.orders
+        }
+      })
     }
-    const items = [{}]
+  )
 
-    const order: {
-      appid: string
-      apptransid: string
-      appuser: string
-      apptime: number
-      item: string
-      embeddata: string
-      amount: number
-      description: string
-      bankcode: string
-      mac?: string
-      callback_url: string
-    } = {
-      appid: config.appid,
-      apptransid: `${moment().format('YYMMDD')}_${uuid()}`, // mã giao dich có định dạng yyMMdd_xxxx
-      appuser: 'demo',
-      apptime: Date.now(), // miliseconds
-      item: JSON.stringify(items),
-      embeddata: JSON.stringify(embeddata),
-      amount: 50000,
-      description: 'Thanh toán đơn hàng tại Đậu Homemade',
-      bankcode: '',
-      callback_url: 'https://dau.stu.id.vn:81/api/callback'
-    }
-
-    const data =
-      config.appid +
-      '|' +
-      order.apptransid +
-      '|' +
-      order.appuser +
-      '|' +
-      order.amount +
-      '|' +
-      order.apptime +
-      '|' +
-      order.embeddata +
-      '|' +
-      order.item
-
-    order.mac = CryptoJS.HmacSHA256(data, config.key1).toString()
-    try {
-      const result = await axios.post(config.endpoint, null, { params: order })
-      return reply.status(200).send(result.data)
-    } catch (error) {
-      if (error instanceof Error) {
-        console.log(error.message)
+  fastify.post<{ Body: { data: string; mac: string } }>(
+    '/callback',
+    {
+      preValidation: fastify.auth([requireLoginedHook])
+    },
+    async (request, reply) => {
+      const result = await callbackZaloPayController(request.body)
+      if (result.socketId) {
+        fastify.io.to(result.socketId).to(ManagerRoom).emit('payment', result.orders)
       } else {
-        console.log(String(error))
+        fastify.io.to(ManagerRoom).emit('payment', result.orders)
+      }
+      reply.send({
+        message: 'Callback ZaloPay thành công!',
+        data: result
+      })
+    }
+  )
+
+  fastify.post(
+    '/order-status/:app_trans_id',
+    {
+      preValidation: fastify.auth([requireLoginedHook])
+    },
+    async (request, reply) => {
+      const app_trans_id = (request.params as { app_trans_id: string }).app_trans_id
+      let postData: { appid: string; apptransid: string; mac?: string } = {
+        appid: config.app_id,
+        apptransid: app_trans_id
+      }
+
+      let data = postData.appid + '|' + postData.apptransid + '|' + config.key1
+      postData.mac = CryptoJS.HmacSHA256(data, config.key1).toString()
+
+      let postConfig = {
+        method: 'post',
+        url: config.endpoint_check_status,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        data: QueryString.stringify(postData)
+      }
+
+      try {
+        const result = await axios(postConfig)
+        return reply.status(200).send(result.data)
+      } catch (error) {
+        if (error instanceof Error) {
+          console.log(error.message)
+        } else {
+          console.log(String(error))
+        }
       }
     }
-  })
-
-  fastify.post('/callback', async (request, reply) => {
-    let result: { returncode?: number; returnmessage?: string } = {}
-
-    try {
-      let dataStr = (request.body as { data: string }).data
-      let reqMac = (request.body as { mac: string }).mac
-
-      let mac = CryptoJS.HmacSHA256(dataStr, config.key2).toString()
-      console.log('mac =', mac)
-
-      // kiểm tra callback hợp lệ (đến từ ZaloPay server)
-      if (reqMac !== mac) {
-        // callback không hợp lệ
-        result.returncode = -1
-        result.returnmessage = 'mac not equal'
-      } else {
-        // thanh toán thành công
-        // merchant cập nhật trạng thái cho đơn hàng
-        result.returncode = 1
-        result.returnmessage = 'success'
-      }
-    } catch (ex) {
-      result.returncode = 0 // ZaloPay server sẽ callback lại (tối đa 3 lần)
-      result.returnmessage = (ex as Error).message
-    }
-
-    // thông báo kết quả cho ZaloPay server
-    reply.send(result)
-  })
+  )
 }

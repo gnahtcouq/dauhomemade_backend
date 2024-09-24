@@ -78,6 +78,7 @@ model Order {
   quantity       Int
   orderHandler   Account?     @relation(fields: [orderHandlerId], references: [id], onDelete: SetNull, onUpdate: NoAction)
   orderHandlerId Int?
+  app_trans_id   String?
   status         String       @default("Pending")
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
