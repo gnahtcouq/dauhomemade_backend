@@ -228,24 +228,18 @@ export default async function orderRoutes(fastify: FastifyInstance, options: Fas
     }
   )
 
-  fastify.post<{ Body: { data: string; mac: string } }>(
-    '/callback',
-    {
-      preValidation: fastify.auth([requireLoginedHook])
-    },
-    async (request, reply) => {
-      const result = await callbackZaloPayController(request.body)
-      if (result.socketId) {
-        fastify.io.to(result.socketId).to(ManagerRoom).emit('payment', result.orders)
-      } else {
-        fastify.io.to(ManagerRoom).emit('payment', result.orders)
-      }
-      reply.send({
-        message: 'Callback ZaloPay thành công!',
-        data: result
-      })
+  fastify.post<{ Body: { data: string; mac: string } }>('/callback', async (request, reply) => {
+    const result = await callbackZaloPayController(request.body)
+    if (result.socketId) {
+      fastify.io.to(result.socketId).to(ManagerRoom).emit('payment', result.orders)
+    } else {
+      fastify.io.to(ManagerRoom).emit('payment', result.orders)
     }
-  )
+    reply.send({
+      message: 'Callback ZaloPay thành công!',
+      data: result
+    })
+  })
 
   fastify.post(
     '/order-status/:app_trans_id',
