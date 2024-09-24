@@ -211,6 +211,9 @@ export default async function orderRoutes(fastify: FastifyInstance, options: Fas
 
   fastify.post<{ Body: PayGuestOrdersBodyType; Reply: ZaloPayGuestOrdersResType }>(
     '/zalopay',
+    {
+      preValidation: fastify.auth([requireLoginedHook])
+    },
     async (request, reply) => {
       const result = await payOrdersWithZaloPayController({
         guestId: request.body.guestId
@@ -233,7 +236,7 @@ export default async function orderRoutes(fastify: FastifyInstance, options: Fas
       fastify.io.to(ManagerRoom).emit('payment', result.orders)
     }
     reply.send({
-      message: 'Callback ZaloPay thành công!',
+      message: 'Callback ZaloPay',
       data: result
     })
   })
@@ -241,7 +244,9 @@ export default async function orderRoutes(fastify: FastifyInstance, options: Fas
   fastify.post(
     '/order-status/:app_trans_id',
     {
-      preValidation: fastify.auth([requireLoginedHook])
+      preValidation: fastify.auth([requireLoginedHook, [requireOwnerHook, requireEmployeeHook]], {
+        relation: 'and'
+      })
     },
     async (request, reply) => {
       const app_trans_id = (request.params as { app_trans_id: string }).app_trans_id
