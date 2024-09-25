@@ -42,7 +42,7 @@ export const OrderSchema = z.object({
 export const UpdateOrderBody = z.object({
   status: z.enum(OrderStatusValues),
   dishId: z.number(),
-  quantity: z.number()
+  quantity: z.number().positive()
 })
 
 export type UpdateOrderBodyType = z.TypeOf<typeof UpdateOrderBody>
