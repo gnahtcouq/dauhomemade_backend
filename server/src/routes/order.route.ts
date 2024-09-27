@@ -37,14 +37,7 @@ import moment from 'moment'
 import CryptoJS from 'crypto-js'
 import axios from 'axios'
 import QueryString from 'qs'
-
-const config = {
-  app_id: '2554',
-  key1: 'sdngKKJmqEMzvh5QQcdD2A9XBSKUNaYn',
-  key2: 'trMrHtvjo6myautxDUiAcYsVtaeQ8nhf',
-  endpoint: 'https://sb-openapi.zalopay.vn/v2/create',
-  endpoint_check_status: 'https://sandbox.zalopay.com.vn/v001/tpe/getstatusbyapptransid'
-}
+import envConfig from '@/config'
 
 export default async function orderRoutes(fastify: FastifyInstance, options: FastifyPluginOptions) {
   fastify.post<{ Reply: CreateOrdersResType; Body: CreateOrdersBodyType }>(
@@ -251,16 +244,16 @@ export default async function orderRoutes(fastify: FastifyInstance, options: Fas
     async (request, reply) => {
       const app_trans_id = (request.params as { app_trans_id: string }).app_trans_id
       let postData: { appid: string; apptransid: string; mac?: string } = {
-        appid: config.app_id,
+        appid: envConfig.ZP_APP_ID,
         apptransid: app_trans_id
       }
 
-      let data = postData.appid + '|' + postData.apptransid + '|' + config.key1
-      postData.mac = CryptoJS.HmacSHA256(data, config.key1).toString()
+      let data = postData.appid + '|' + postData.apptransid + '|' + envConfig.ZP_KEY1
+      postData.mac = CryptoJS.HmacSHA256(data, envConfig.ZP_KEY1).toString()
 
       let postConfig = {
         method: 'post',
-        url: config.endpoint_check_status,
+        url: envConfig.ZP_CHECK_STATUS,
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         },
