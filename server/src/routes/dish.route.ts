@@ -1,5 +1,5 @@
 import { createDish, deleteDish, getDishDetail, getDishList, updateDish } from '@/controllers/dish.controller'
-import { requireEmployeeHook, requireLoginedHook, requireOwnerHook } from '@/hooks/auth.hooks'
+import { requireLoginedHook, requireOwnerHook } from '@/hooks/auth.hooks'
 import {
   CreateDishBody,
   CreateDishBodyType,

@@ -1,3 +1,4 @@
+import envConfig from '@/config'
 import { ManagerRoom, Role } from '@/constants/type'
 import {
   callbackZaloPayController,
@@ -8,7 +9,7 @@ import {
   payOrdersWithZaloPayController,
   updateOrderController
 } from '@/controllers/order.controller'
-import { requireEmployeeHook, requireGuestHook, requireLoginedHook, requireOwnerHook } from '@/hooks/auth.hooks'
+import { requireEmployeeHook, requireLoginedHook, requireOwnerHook } from '@/hooks/auth.hooks'
 import {
   CreateOrdersBody,
   CreateOrdersBodyType,
@@ -32,12 +33,10 @@ import {
   UpdateOrderResType,
   ZaloPayGuestOrdersResType
 } from '@/schemaValidations/order.schema'
-import { FastifyInstance, FastifyPluginOptions } from 'fastify'
-import moment from 'moment'
-import CryptoJS from 'crypto-js'
 import axios from 'axios'
+import CryptoJS from 'crypto-js'
+import { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import QueryString from 'qs'
-import envConfig from '@/config'
 
 export default async function orderRoutes(fastify: FastifyInstance, options: FastifyPluginOptions) {
   fastify.post<{ Reply: CreateOrdersResType; Body: CreateOrdersBodyType }>(
