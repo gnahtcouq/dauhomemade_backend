@@ -8,7 +8,7 @@ export const CreateDishBody = z.object({
   description: z.string().max(10000),
   image: z.string().url(),
   status: z.enum(DishStatusValues).optional(),
-  categoryId: z.number()
+  categoryId: z.number().positive()
 })
 
 export type CreateDishBodyType = z.TypeOf<typeof CreateDishBody>
