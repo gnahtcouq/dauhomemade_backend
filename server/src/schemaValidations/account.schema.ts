@@ -137,7 +137,7 @@ export type GetGuestListQueryParamsType = z.TypeOf<typeof GetGuestListQueryParam
 
 export const CreateGuestBody = z
   .object({
-    name: z.string().trim().min(2).max(256),
+    name: z.string().trim().min(2).max(50),
     tableNumber: z.number()
   })
   .strict()
