@@ -35,7 +35,17 @@ export const updateCategory = (id: number, data: UpdateCategoryBodyType) => {
   })
 }
 
-export const deleteCategory = (id: number) => {
+export const deleteCategory = async (id: number) => {
+  const dishes = await prisma.dish.findMany({
+    where: {
+      categoryId: id
+    }
+  })
+
+  if (dishes.length > 0) {
+    throw new Error('Không thể xoá danh mục vì vẫn còn món ăn trong danh mục này!')
+  }
+
   return prisma.category.delete({
     where: {
       id
