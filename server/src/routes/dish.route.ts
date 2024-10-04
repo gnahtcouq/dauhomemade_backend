@@ -27,9 +27,9 @@ export default async function dishRoutes(fastify: FastifyInstance, options: Fast
       }
     },
     async (request, reply) => {
-      const dishs = await getDishList()
+      const dishes = await getDishList()
       reply.send({
-        data: dishs as DishListResType['data'],
+        data: dishes as DishListResType['data'],
         message: 'Lấy danh sách món ăn thành công!'
       })
     }

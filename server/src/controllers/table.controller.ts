@@ -23,6 +23,15 @@ export const getTableDetail = (number: number) => {
 export const createTable = async (data: CreateTableBodyType) => {
   const token = randomId()
   try {
+    if (data.number > 2147483647) {
+      throw new EntityError([
+        {
+          message: 'Số bàn không hợp lệ',
+          field: 'number'
+        }
+      ])
+    }
+
     // Kiểm tra xem số bàn đã tồn tại hay chưa
     const existingTable = await prisma.table.findUnique({
       where: { number: data.number }
