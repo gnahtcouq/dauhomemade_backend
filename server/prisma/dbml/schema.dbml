@@ -99,9 +99,19 @@ Table Guest {
   orders Order [not null]
   refreshToken String
   refreshTokenExpiresAt DateTime
+  notifications Notification [not null]
   sockets Socket [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
+}
+
+Table Notification {
+  id Int [pk, increment]
+  guestId Int [not null]
+  message String [not null]
+  isRead Boolean [not null, default: false]
+  createdAt DateTime [default: `now()`, not null]
+  guest Guest [not null]
 }
 
 Table Socket {
@@ -129,6 +139,8 @@ Ref: Order.orderHandlerId > Account.id [delete: Set Null]
 Ref: RefreshToken.accountId > Account.id [delete: Cascade]
 
 Ref: Guest.tableNumber > Table.number [delete: Set Null]
+
+Ref: Notification.guestId > Guest.id
 
 Ref: Socket.accountId > Account.id [delete: Set Null]
 

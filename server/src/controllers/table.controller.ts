@@ -55,6 +55,14 @@ export const createTable = async (data: CreateTableBodyType) => {
     return result
   } catch (error) {
     if (error instanceof PrismaClientKnownRequestError) {
+      if (error.code === 'P2023') {
+        throw new EntityError([
+          {
+            message: 'Số bàn không hợp lệ',
+            field: 'number'
+          }
+        ])
+      }
       if (error.code === 'P2002') {
         throw new EntityError([
           {

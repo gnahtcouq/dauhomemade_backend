@@ -82,6 +82,15 @@ export const createOrdersController = async (orderHandlerId: number, body: Creat
       }
     })
   ])
+
+  // Lưu thông báo
+  await prisma.notification.create({
+    data: {
+      guestId,
+      message: `Bạn đã tạo ${orders.length} đơn hàng`
+    }
+  })
+
   return {
     orders: ordersRecord,
     socketId: socketRecord?.socketId
@@ -162,6 +171,41 @@ export const payOrdersController = async ({ guestId, orderHandlerId }: { guestId
     orders: ordersResult,
     socketId: sockerRecord?.socketId
   }
+}
+
+export const getNotificationsController = async () => {
+  const notifications = await prisma.notification.findMany({
+    orderBy: {
+      createdAt: 'desc'
+    }
+  })
+  return notifications
+}
+
+export const markNotificationAsReadController = async (notificationId: number) => {
+  const notification = await prisma.notification.update({
+    where: {
+      id: Number(notificationId)
+    },
+    data: {
+      isRead: true
+    }
+  })
+  return notification
+}
+
+export const markAllNotificationsAsReadController = async () => {
+  await prisma.notification.updateMany({
+    data: {
+      isRead: true
+    }
+  })
+  return { message: 'Đã đánh dấu tất cả thông báo là đã đọc!' }
+}
+
+export const deleteAllNotificationsController = async () => {
+  await prisma.notification.deleteMany()
+  return { message: 'Đã xóa tất cả thông báo thành công!' }
 }
 
 // Controller thanh toán các hóa đơn dựa trên guestId với ZaloPay

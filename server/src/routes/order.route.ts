@@ -1,10 +1,14 @@
 import envConfig from '@/config'
-import { ManagerRoom, Role } from '@/constants/type'
+import { ManagerRoom, OrderStatus, Role } from '@/constants/type'
 import {
   callbackZaloPayController,
   createOrdersController,
+  deleteAllNotificationsController,
+  getNotificationsController,
   getOrderDetailController,
   getOrdersController,
+  markAllNotificationsAsReadController,
+  markNotificationAsReadController,
   payOrdersController,
   payOrdersWithZaloPayController,
   updateOrderController
@@ -15,6 +19,7 @@ import {
   CreateOrdersBodyType,
   CreateOrdersRes,
   CreateOrdersResType,
+  GetNotificationResType,
   GetOrderDetailRes,
   GetOrderDetailResType,
   GetOrdersQueryParams,
@@ -27,6 +32,7 @@ import {
   PayGuestOrdersBodyType,
   PayGuestOrdersRes,
   PayGuestOrdersResType,
+  UpdateNotificationResType,
   UpdateOrderBody,
   UpdateOrderBodyType,
   UpdateOrderRes,
@@ -93,6 +99,65 @@ export default async function orderRoutes(fastify: FastifyInstance, options: Fas
     }
   )
 
+  fastify.get<{ Reply: GetNotificationResType }>(
+    '/notifications',
+    {
+      preValidation: fastify.auth([requireLoginedHook, [requireOwnerHook, requireEmployeeHook]], {
+        relation: 'and'
+      })
+    },
+    async (request, reply) => {
+      const notifications = await getNotificationsController()
+      reply.send({
+        message: 'Lấy danh sách thông báo thành công!',
+        data: notifications
+      })
+    }
+  )
+
+  fastify.put<{ Params: { notificationId: number }; Reply: UpdateNotificationResType }>(
+    '/notifications/:notificationId',
+    {
+      preValidation: fastify.auth([requireLoginedHook, [requireOwnerHook, requireEmployeeHook]], {
+        relation: 'and'
+      })
+    },
+    async (request, reply) => {
+      const notificationId = Number(request.params.notificationId)
+      const notification = await markNotificationAsReadController(notificationId)
+      reply.send({
+        message: 'Đánh dấu thông báo là đã đọc thành công!',
+        data: notification
+      })
+    }
+  )
+
+  fastify.delete<{ Reply: { message: string } }>(
+    '/notifications',
+    {
+      preValidation: fastify.auth([requireLoginedHook, [requireOwnerHook, requireEmployeeHook]], {
+        relation: 'and'
+      })
+    },
+    async (request, reply) => {
+      const result = await deleteAllNotificationsController()
+      reply.send(result)
+    }
+  )
+
+  fastify.put<{ Reply: { message: string } }>(
+    '/notifications/mark-all-read',
+    {
+      preValidation: fastify.auth([requireLoginedHook, [requireOwnerHook, requireEmployeeHook]], {
+        relation: 'and'
+      })
+    },
+    async (request, reply) => {
+      const result = await markAllNotificationsAsReadController()
+      reply.send(result)
+    }
+  )
+
   fastify.get<{ Reply: GetOrderDetailResType; Params: OrderParamType }>(
     '/:orderId',
     {
@@ -135,7 +200,7 @@ export default async function orderRoutes(fastify: FastifyInstance, options: Fas
       const currentOrder = await getOrderDetailController(request.params.orderId)
 
       // Kiểm tra trạng thái thanh toán
-      if (currentOrder.status === 'Paid') {
+      if (currentOrder.status === OrderStatus.Paid) {
         return reply.status(403).send({
           message: 'Đơn hàng đã thanh toán, không thể chỉnh sửa hoặc thay đổi trạng thái',
           data: {} as any

@@ -51,9 +51,9 @@ export const socketPlugin = fastifyPlugin(async (fastify) => {
     next()
   })
   fastify.io.on('connection', async (socket) => {
-    console.log(chalk.cyanBright('🔌 Socket connected:', socket.id))
+    console.log(chalk.cyanBright('✅ Socket connected:', socket.id))
     socket.on('disconnect', async (reason) => {
-      console.log(chalk.redBright('🔌 Socket disconnected:', socket.id))
+      console.log(chalk.redBright('❌ Socket disconnected:', socket.id))
     })
   })
 })

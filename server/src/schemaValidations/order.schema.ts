@@ -123,3 +123,31 @@ export const CreateOrdersRes = z.object({
 })
 
 export type CreateOrdersResType = z.TypeOf<typeof CreateOrdersRes>
+
+export const GetNotificationRes = z.object({
+  message: z.string(),
+  data: z.array(
+    z.object({
+      id: z.number(),
+      guestId: z.number(),
+      message: z.string(),
+      isRead: z.boolean(),
+      createdAt: z.date()
+    })
+  )
+})
+
+export type GetNotificationResType = z.TypeOf<typeof GetNotificationRes>
+
+export const UpdateNotificationRes = z.object({
+  message: z.string(),
+  data: z.object({
+    id: z.number(),
+    guestId: z.number(),
+    message: z.string(),
+    isRead: z.boolean(),
+    createdAt: z.date()
+  })
+})
+
+export type UpdateNotificationResType = z.TypeOf<typeof UpdateNotificationRes>

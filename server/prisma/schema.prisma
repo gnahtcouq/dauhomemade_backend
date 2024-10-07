@@ -110,9 +110,19 @@ model Guest {
   orders                Order[]
   refreshToken          String?
   refreshTokenExpiresAt DateTime?
+  notifications         Notification[]
   sockets               Socket[]
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
+}
+
+model Notification {
+  id          Int      @id @default(autoincrement())
+  guestId     Int
+  message     String
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  guest       Guest    @relation(fields: [guestId], references: [id])
 }
 
 model Socket {

@@ -18,12 +18,13 @@ export const guestLoginController = async (body: GuestLoginBodyType) => {
     throw new Error('Bàn không tồn tại hoặc mã token không đúng')
   }
 
-  if (table.status === TableStatus.Hidden) {
-    throw new Error('Bàn này đã bị ẩn, hãy chọn bàn khác để đăng nhập')
+  const statusErrorMap = {
+    [TableStatus.Hidden]: 'Bàn này đã bị ẩn, hãy chọn bàn khác để đăng nhập',
+    [TableStatus.Reserved]: 'Bàn đã được đặt trước, hãy liên hệ nhân viên để được hỗ trợ'
   }
 
-  if (table.status === TableStatus.Reserved) {
-    throw new Error('Bàn đã được đặt trước, hãy liên hệ nhân viên để được hỗ trợ')
+  if (statusErrorMap[table.status]) {
+    throw new Error(statusErrorMap[table.status])
   }
 
   let guest = await prisma.guest.create({
@@ -32,6 +33,7 @@ export const guestLoginController = async (body: GuestLoginBodyType) => {
       tableNumber: body.tableNumber
     }
   })
+
   const refreshToken = signRefreshToken(
     {
       userId: guest.id,
@@ -188,6 +190,13 @@ export const guestCreateOrdersController = async (guestId: number, body: GuestCr
         }
       })
     )
+    // Lưu thông báo
+    await tx.notification.create({
+      data: {
+        guestId,
+        message: `${guest.name} đã đặt ${orders.length} đơn hàng`
+      }
+    })
     return orders
   })
   return result

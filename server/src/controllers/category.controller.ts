@@ -5,6 +5,9 @@ export const getCategoryList = async () => {
   const categories = await prisma.category.findMany({
     orderBy: {
       createdAt: 'desc'
+    },
+    include: {
+      dishes: true
     }
   })
   return categories
