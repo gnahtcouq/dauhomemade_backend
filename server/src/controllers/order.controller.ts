@@ -167,6 +167,15 @@ export const payOrdersController = async ({ guestId, orderHandlerId }: { guestId
       }
     })
   ])
+
+  // Lưu thông báo
+  await prisma.notification.create({
+    data: {
+      guestId,
+      message: `Khách hàng #${guestId} thanh toán thành công ${orders.length} đơn hàng`
+    }
+  })
+
   return {
     orders: ordersResult,
     socketId: sockerRecord?.socketId
@@ -323,9 +332,10 @@ export const callbackZaloPayController = async (body: { data: string; mac: strin
       result.returnmessage = 'success'
       const dataJson = JSON.parse(dataStr)
       const appTransId = dataJson['app_trans_id'] // Lấy app_trans_id từ dữ liệu trả về
+      const guestId = JSON.parse(dataJson.item)[0].guestId
       const socketRecord = await prisma.socket.findUnique({
         where: {
-          guestId: JSON.parse(dataJson.item)[0].guestId
+          guestId: guestId
         }
       })
       const orders = await prisma.order.findMany({
@@ -350,6 +360,14 @@ export const callbackZaloPayController = async (body: { data: string; mac: strin
         },
         data: {
           status: OrderStatus.Paid
+        }
+      })
+
+      // Lưu thông báo
+      await prisma.notification.create({
+        data: {
+          guestId: guestId,
+          message: `Khách hàng #${guestId} thanh toán thành công ${orders.length} đơn hàng với ZaloPay`
         }
       })
     }
