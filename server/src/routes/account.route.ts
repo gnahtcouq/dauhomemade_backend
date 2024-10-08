@@ -222,7 +222,9 @@ export default async function accountRoutes(fastify: FastifyInstance, options: F
         },
         body: CreateGuestBody
       },
-      preValidation: fastify.auth([requireOwnerHook])
+      preValidation: fastify.auth([requireOwnerHook, requireEmployeeHook], {
+        relation: 'or'
+      })
     },
     async (request, reply) => {
       const result = await createGuestController(request.body)
